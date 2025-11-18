@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>NeonBlog — Multi-user (Local)</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='0.9em' font-size='90'%3E💜%3C/text%3E%3C/svg%3E">
+<style>
+/* ---------- Neon purple theme (compact) ---------- */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+  -webkit-font-smoothing:antialiased;
+  background: radial-gradient(1000px 500px at 10% 10%, rgba(167,139,250,0.06), transparent 8%), linear-gradient(180deg,#05060a,#030103);
+  color:#e6e6ee;min-height:100vh;padding:20px;
+}
+:root{--accent:#a78bfa;--accent2:#7c3aed;--muted:#9aa3b2;--glass:8px;--card:rgba(10,8,14,0.6)}
+.container{max-width:1150px;margin:0 auto;padding:0 16px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;border-radius:12px;background:linear-gradient(180deg, rgba(16,10,26,0.6), rgba(10,5,18,0.4));border:1px solid rgba(124,58,237,0.06);backdrop-filter: blur(var(--glass));box-shadow:0 10px 40px rgba(0,0,0,0.6)}
+.brand{display:flex;gap:12px;align-items:center}
+.logo{width:46px;height:46px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#0b0710}
+.title{font-weight:800}
+.subtitle{font-size:12px;color:var(--muted)}
+.controls{display:flex;gap:8px;align-items:center;flex:1;margin-left:12px}
+.search{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,0.02);min-width:220px;flex:1}
+.search input{background:transparent;border:0;outline:0;color:inherit;width:100%}
+.select{padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02);color:inherit}
+.btn{padding:8px 12px;border-radius:10px;border:0;background:transparent;color:inherit;cursor:pointer;font-weight:700}
+.btnAccent{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#0b0710;box-shadow:0 10px 30px rgba(124,58,237,0.18)}
+.iconBtn{width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,0.02);display:flex;align-items:center;justify-content:center}
+.mainGrid{display:grid;grid-template-columns:1fr 340px;gap:18px;margin-top:14px}
+@media(max-width:980px){.mainGrid{grid-template-columns:1fr}.controls{flex-direction:column;align-items:stretch}}
+.hero{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.02);backdrop-filter: blur(calc(var(--glass) + 2px))}
+.card{background:rgba(10,8,14,0.6);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.02)}
+.featuredGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:12px}
+.postsGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:14px}
+.postCard{padding:12px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.02);box-shadow:0 10px 30px rgba(0,0,0,0.6);display:flex;flex-direction:column;gap:8px}
+.postThumb{width:100%;height:150px;object-fit:cover;border-radius:8px;background:#0b0710}
+.form{margin-top:12px;background:rgba(10,8,14,0.5);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.02)}
+.input,textarea,select{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:inherit;outline:none;margin-top:8px}
+textarea{min-height:140px;resize:vertical}
+.preview{margin-top:12px;padding:10px;border-radius:8px;background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.02)}
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:linear-gradient(180deg, rgba(2,2,6,0.6), rgba(2,2,6,0.8));z-index:1000}
+.modalCard{width:100%;max-width:920px;background:rgba(8,6,12,0.94);padding:18px;border-radius:12px;border:1px solid rgba(124,58,237,0.06)}
+.kv{color:var(--muted);font-size:13px}
+.tag{display:inline-block;padding:6px 8px;border-radius:999px;background:rgba(124,58,237,0.06);color:var(--muted);margin-right:6px}
+.userChip{display:flex;align-items:center;gap:8px;padding:6px;border-radius:8px;background:rgba(255,255,255,0.02)}
+.small{max-width:220px}
+.note{font-size:13px;color:var(--muted);margin-top:8px}
+</style>
+</head>
+<body>
+<div class="container">
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px;flex:1">
+      <div class="brand">
+        <div class="logo">💜</div>
+      </div>
+      <div>
+        <div class="title">NeonBlog</div>
+        <div class="subtitle">multi-user (local) • purple futurism</div>
+      </div>
+
+      <div class="controls">
+        <div class="search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.3-4.3" stroke="#9aa3b2" stroke-width="1.6" stroke-linecap="round"/><circle cx="11" cy="11" r="6" stroke="#9aa3b2" stroke-width="1.6"/></svg>
+          <input id="searchInput" placeholder="Search posts, tags, content..." oninput="applyFilters()" />
+        </div>
+        <select id="categoryFilter" class="select" onchange="applyFilters()">
+          <option value="">All categories</option>
+          <option>AI</option><option>Design</option><option>Travel</option><option>Food</option><option>Life</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="btn" onclick="navigate('home')">Home</button>
+      <button class="btn" onclick="navigate('posts')">All Posts</button>
+      <button class="btn btnAccent" onclick="navigate('create')">Create</button>
+
+      <!-- User area -->
+      <div id="userArea" style="display:flex;align-items:center;gap:8px;margin-left:6px"></div>
+
+      <button class="btn" onclick="openLogin()">Login</button>
+      <button class="btn" onclick="openSignup()">Signup</button>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="mainGrid">
+    <div>
+      <div class="hero">
+        <h1>NeonBlog — multi-user (local simulation)</h1>
+        <p class="kv">Sign up multiple users locally. Admin sees all posts; editors/readers see only their posts. All stored in localStorage.</p>
+        <div id="featuredGrid" class="featuredGrid"></div>
+      </div>
+
+      <section id="posts" style="margin-top:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h3>All posts</h3>
+          <div class="kv">Showing <strong id="resultCount">0</strong></div>
+        </div>
+        <div id="postsGrid" class="postsGrid"></div>
+      </section>
+    </div>
+
+    <aside>
+      <div class="card" style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><div class="kv">Users</div><div id="usersCount" style="font-weight:800">0</div></div>
+          <div><div class="kv">Posts</div><div id="totalCount" style="font-weight:800">0</div></div>
+        </div>
+        <div style="height:10px"></div>
+        <div class="note">Tip: create users with different roles. Default admin is created if none exist (admin@neon.local / password: admin).</div>
+      </div>
+
+      <div class="card">
+        <div class="kv">Accent</div>
+        <input id="accentPicker" type="color" style="width:100%;height:36px;border-radius:8px;border:0;margin-top:8px" />
+        <div style="height:8px"></div>
+        <div class="kv">Quick switch</div>
+        <select id="quickSwitch" class="select" onchange="quickSwitchUser(this.value)">
+          <option value="">-- switch user (dev) --</option>
+        </select>
+        <div style="height:8px"></div>
+        <div><button class="btn" onclick="exportPosts()">Export</button> <label class="btn" style="cursor:pointer"><input id="importFile" type="file" accept="application/json" style="display:none" onchange="importPosts(event)" />Import</label></div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- CREATE -->
+  <section id="create" style="margin-top:20px;display:none">
+    <div class="form">
+      <div style="display:flex;gap:12px;align-items:center">
+        <div style="flex:1">
+          <label class="kv">Title</label>
+          <input id="title" class="input" placeholder="Post title" />
+        </div>
+        <div style="width:180px">
+          <label class="kv">Category</label>
+          <select id="category" class="input">
+            <option>AI</option><option>Design</option><option>Travel</option><option>Food</option><option>Life</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;margin-top:12px">
+        <div style="flex:1">
+          <label class="kv">Content (Markdown-ish)</label>
+          <textarea id="content" placeholder="Write your post..." oninput="onContentInput()"></textarea>
+
+          <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+            <button class="btn" onclick="togglePreview()">Preview</button>
+            <button class="btn" onclick="insertMarkdown('# Heading')">H1</button>
+            <button class="btn" onclick="insertMarkdown('**bold**')">Bold</button>
+            <div style="flex:1"></div>
+            <div class="kv">Editing: <strong id="editingIndicator">New</strong></div>
+          </div>
+
+          <div id="livePreview" class="preview" style="display:none"></div>
+        </div>
+
+        <div style="width:300px">
+          <label class="kv">Cover image (drag or choose)</label>
+          <input id="imgInput" type="file" accept="image/*" class="input" />
+          <div id="imgPreview" style="margin-top:10px"></div>
+
+          <label class="kv" style="margin-top:10px">Tags (comma)</label>
+          <input id="tags" class="input" placeholder="neon,ai,design" />
+
+          <div style="display:flex;gap:12px;align-items:center;margin-top:12px">
+            <label><input id="featured" type="checkbox" /> <span class="kv">Featured</span></label>
+            <label><input id="protect" type="checkbox" /> <span class="kv">Protected</span></label>
+          </div>
+
+          <div style="margin-top:8px">
+            <label class="kv">Publish at (optional)</label>
+            <input id="publishAt" type="datetime-local" class="input" />
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button id="publishBtn" class="btn btnAccent" onclick="publish()">Publish</button>
+            <button class="btn" onclick="clearForm()">Reset</button>
+            <button class="btn" onclick="previewPost()">Preview</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOGIN MODAL -->
+  <div id="loginModal" class="modal" onclick="closeModalById(event,'loginModal')">
+    <div class="modalCard" onclick="event.stopPropagation()">
+      <button class="btn" style="float:right" onclick="closeModalById(null,'loginModal')">Close</button>
+      <h3>Login</h3>
+      <div style="margin-top:8px">
+        <label class="kv">Email</label>
+        <input id="loginEmail" class="input" placeholder="you@example.com" />
+        <label class="kv" style="margin-top:8px">Password</label>
+        <input id="loginPassword" type="password" class="input" />
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="btn btnAccent" onclick="doLogin()">Login</button>
+          <button class="btn" onclick="openSignup()">Create account</button>
+        </div>
+        <div id="loginMsg" class="kv" style="margin-top:8px;color:var(--muted)"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIGNUP MODAL -->
+  <div id="signupModal" class="modal" onclick="closeModalById(event,'signupModal')">
+    <div class="modalCard" onclick="event.stopPropagation()">
+      <button class="btn" style="float:right" onclick="closeModalById(null,'signupModal')">Close</button>
+      <h3>Sign up</h3>
+      <div style="display:grid;gap:8px;margin-top:8px">
+        <label class="kv">Name</label>
+        <input id="signupName" class="input" placeholder="Your name" />
+        <label class="kv">Email</label>
+        <input id="signupEmail" class="input" placeholder="you@example.com" />
+        <label class="kv">Password</label>
+        <input id="signupPassword" type="password" class="input" />
+        <label class="kv">Role</label>
+        <select id="signupRole" class="input"><option value="editor">editor</option><option value="reader">reader</option><option value="admin">admin</option></select>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn btnAccent" onclick="doSignup()">Create account</button>
+          <button class="btn" onclick="openLogin()">Have an account?</button>
+        </div>
+        <div id="signupMsg" class="kv" style="margin-top:6px;color:var(--muted)"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN PANEL MODAL -->
+  <div id="adminModal" class="modal" onclick="closeModalById(event,'adminModal')">
+    <div class="modalCard" onclick="event.stopPropagation()">
+      <button class="btn" style="float:right" onclick="closeModalById(null,'adminModal')">Close</button>
+      <h3>Admin — Users</h3>
+      <div id="adminUsersList" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <!-- POST VIEW MODAL -->
+  <div id="modal" class="modal" onclick="closeModalById(event,'modal')">
+    <div class="modalCard" onclick="event.stopPropagation()">
+      <button class="btn" style="float:right" onclick="closeModalById(null,'modal')">Close</button>
+      <div id="modalBody"></div>
+      <div style="margin-top:12px">
+        <h4>Comments</h4>
+        <div id="commentList"></div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <input id="commentInput" class="input" placeholder="Add comment..." />
+          <button class="btn btnAccent" onclick="addComment()">Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ================= Multi-user NeonBlog (local-only) ================= */
+
+/* Storage keys */
+const USERS_KEY = 'neonblog_users_v1';
+const POSTS_KEY = 'neonblog_posts_v1';
+const SESSION_KEY = 'neonblog_session_v1';
+const THEME_KEY = 'neonblog_theme_v1';
+
+/* State */
+let users = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
+let posts = JSON.parse(localStorage.getItem(POSTS_KEY) || '[]');
+let session = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); // { userId }
+let pendingImageBase64 = '';
+let editingId = null;
+let previewVisible = false;
+let currentOpenPostId = null;
+let readStartTs = null;
+
+/* Helpers */
+const $ = id => document.getElementById(id);
+const uid = ()=> Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+const now = ()=> new Date().toISOString();
+function saveUsers(){ localStorage.setItem(USERS_KEY, JSON.stringify(users)); }
+function savePosts(){ localStorage.setItem(POSTS_KEY, JSON.stringify(posts)); }
+function saveSession(){ localStorage.setItem(SESSION_KEY, JSON.stringify(session)); }
+
+/* ---------- Crypto: PBKDF2 password hashing (browser) ---------- */
+async function hashPassword(password){
+  const enc = new TextEncoder();
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits','deriveKey']);
+  const derived = await crypto.subtle.deriveBits({name:'PBKDF2', salt, iterations:200000, hash:'SHA-256'}, keyMaterial, 256);
+  const hashB64 = arrayBufferToBase64(derived);
+  return { salt: arrayBufferToBase64(salt), hash: hashB64 };
+}
+async function verifyPassword(password, saltB64, hashB64){
+  try {
+    const enc = new TextEncoder();
+    const salt = base64ToArrayBuffer(saltB64);
+    const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
+    const derived = await crypto.subtle.deriveBits({name:'PBKDF2', salt, iterations:200000, hash:'SHA-256'}, keyMaterial, 256);
+    const derivedB64 = arrayBufferToBase64(derived);
+    return derivedB64 === hashB64;
+  } catch(e){ return false; }
+}
+function arrayBufferToBase64(buf){ let bin=''; const bytes=new Uint8Array(buf); for(let b of bytes) bin+=String.fromCharCode(b); return btoa(bin); }
+function base64ToArrayBuffer(b64){ const bin = atob(b64); const len = bin.length; const arr = new Uint8Array(len); for(let i=0;i<len;i++) arr[i]=bin.charCodeAt(i); return arr.buffer; }
+
+/* ---------- Bootstrap: ensure default admin exists ---------- */
+(async function ensureAdmin(){
+  if(users.length === 0){
+    // create default admin: admin@neon.local with password 'admin'
+    const pw = 'admin';
+    const res = await hashPassword(pw);
+    const admin = { id: uid(), name: 'Admin', email: 'admin@neon.local', role: 'admin', salt: res.salt, hash: res.hash, avatar:'', createdAt: now() };
+    users.push(admin); saveUsers();
+    console.info('Created default admin account: admin@neon.local / password: admin (change it).');
+  }
+  renderTopbarUser();
+  refreshQuickSwitch();
+})();
+
+/* ---------- UI: Topbar user area ---------- */
+function renderTopbarUser(){
+  const area = $('userArea'); area.innerHTML = '';
+  const cur = getCurrentUser();
+  if(cur){
+    const userDiv = document.createElement('div'); userDiv.className='userChip';
+    userDiv.innerHTML = `<div style="width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.02);display:flex;align-items:center;justify-content:center">${cur.avatar? `<img src="${cur.avatar}" style="width:36px;height:36px;border-radius:6px">` : '🙂'}</div>
+      <div style="line-height:1"><div style="font-weight:700">${escape(cur.name||cur.email)}</div><div class="kv">${cur.role}</div></div>
+      <div style="margin-left:8px;display:flex;flex-direction:column;gap:6px">
+        <button class="btn" onclick="openProfile()">Profile</button>
+        ${cur.role==='admin' ? '<button class="btn" onclick="openAdmin()">Admin</button>' : ''}
+        <button class="btn" onclick="doLogout()">Logout</button>
+      </div>`;
+    area.appendChild(userDiv);
+  } else {
+    area.innerHTML = `<div class="kv">Not signed in</div>`;
+  }
+  renderUsersCount();
+}
+
+/* ---------- User helpers ---------- */
+function getCurrentUser(){
+  if(!session || !session.userId) return null;
+  return users.find(u=>u.id===session.userId) || null;
+}
+function quickSwitchUser(userId){
+  if(!userId){ return; }
+  // simulation only: set session to that user (no password)
+  session = { userId }; saveSession(); renderTopbarUser(); renderPosts(); renderHome();
+}
+
+/* ---------- Signup / Login flows ---------- */
+function openLogin(){ $('loginModal').style.display='flex'; }
+function openSignup(){ $('signupModal').style.display='flex'; }
+function closeModalById(e, id){ if(e && e.target && e.target.id && e.target.id !== id) return; $(id).style.display='none'; if(id==='loginModal') $('loginMsg').textContent=''; if(id==='signupModal') $('signupMsg').textContent=''; }
+
+async function doSignup(){
+  const name = $('signupName').value.trim();
+  const email = $('signupEmail').value.trim().toLowerCase();
+  const pass = $('signupPassword').value;
+  const role = $('signupRole').value;
+  if(!email || !pass){ $('signupMsg').textContent='Email and password required'; return; }
+  if(users.find(u=>u.email===email)){ $('signupMsg').textContent='Email already exists'; return; }
+  const res = await hashPassword(pass);
+  const user = { id: uid(), name: name || email.split('@')[0], email, role, salt: res.salt, hash: res.hash, avatar:'', createdAt: now() };
+  users.push(user); saveUsers();
+  session = { userId: user.id }; saveSession();
+  $('signupModal').style.display='none';
+  $('signupName').value=''; $('signupEmail').value=''; $('signupPassword').value='';
+  renderTopbarUser(); refreshQuickSwitch(); renderPosts(); renderHome();
+}
+
+async function doLogin(){
+  const email = $('loginEmail').value.trim().toLowerCase();
+  const pass = $('loginPassword').value;
+  const u = users.find(x=>x.email===email);
+  if(!u){ $('loginMsg').textContent='No user with that email'; return; }
+  const ok = await verifyPassword(pass, u.salt, u.hash);
+  if(!ok){ $('loginMsg').textContent='Incorrect password'; return; }
+  session = { userId: u.id }; saveSession();
+  $('loginModal').style.display='none';
+  $('loginEmail').value=''; $('loginPassword').value='';
+  renderTopbarUser(); renderPosts(); renderHome();
+}
+
+function doLogout(){
+  session = null; saveSession(); renderTopbarUser(); renderPosts(); renderHome();
+}
+
+/* ---------- Admin: list users, change role, delete ---------- */
+function openAdmin(){
+  const cur = getCurrentUser(); if(!cur || cur.role!=='admin'){ alert('Admin only'); return; }
+  $('adminModal').style.display='flex';
+  renderAdminUsers();
+}
+function renderAdminUsers(){
+  const el = $('adminUsersList'); el.innerHTML = '';
+  users.forEach(u=>{
+    const row = document.createElement('div'); row.style.display='flex'; row.style.justifyContent='space-between'; row.style.alignItems='center'; row.style.padding='8px 0'; row.style.borderBottom='1px solid rgba(255,255,255,0.02)';
+    row.innerHTML = `<div><strong>${escape(u.name)}</strong> • <span class="kv">${escape(u.email)}</span> <div class="kv">${u.role}</div></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select onchange="changeUserRole('${u.id}', this.value)"><option value="admin"${u.role==='admin'?' selected':''}>admin</option><option value="editor"${u.role==='editor'?' selected':''}>editor</option><option value="reader"${u.role==='reader'?' selected':''}>reader</option></select>
+        <button class="btn" onclick="impersonateUser('${u.id}')">Impersonate</button>
+        <button class="btn" style="background:#ff4d6d;color:white" onclick="deleteUserConfirm('${u.id}')">Delete</button>
+      </div>`;
+    el.appendChild(row);
+  });
+}
+function changeUserRole(userId, role){
+  const u = users.find(x=>x.id===userId); if(!u) return;
+  u.role = role; saveUsers(); renderAdminUsers(); renderTopbarUser(); refreshQuickSwitch();
+}
+function impersonateUser(userId){
+  if(!confirm('Admin: switch session to this user?')) return;
+  session = { userId }; saveSession(); $('adminModal').style.display='none'; renderTopbarUser(); renderPosts(); renderHome();
+}
+function deleteUserConfirm(userId){
+  if(!confirm('Delete user and all their posts?')) return;
+  users = users.filter(u=>u.id !== userId);
+  posts = posts.filter(p=>p.ownerId !== userId);
+  saveUsers(); savePosts(); renderAdminUsers(); renderTopbarUser(); refreshQuickSwitch(); renderPosts(); renderHome();
+}
+
+/* ---------- Posts: create/edit/delete/duplicate ---------- */
+$('imgInput').addEventListener('change', async e=>{
+  const f = e.target.files[0]; if(!f) return;
+  pendingImageBase64 = await fileToDataUrl(f);
+  $('imgPreview').innerHTML = `<img src="${pendingImageBase64}" style="width:100%;border-radius:8px">`;
+});
+
+function clearForm(){
+  editingId = null; pendingImageBase64 = '';
+  $('title').value=''; $('content').value=''; $('tags').value=''; $('imgInput').value=''; $('imgPreview').innerHTML=''; $('featured').checked=false; $('protect').checked=false; $('publishAt').value='';
+  $('editingIndicator').innerText='New'; $('publishBtn').innerText='Publish';
+  previewVisible = false; $('livePreview').style.display='none';
+}
+
+function insertAtCursor(el,text){ const s = el.selectionStart||0, e=el.selectionEnd||0, v=el.value||''; el.value = v.slice(0,s)+text+v.slice(e); el.selectionStart=el.selectionEnd=s+text.length; el.focus(); }
+function insertMarkdown(txt){ insertAtCursor($('content'), txt); updatePreview(); }
+function togglePreview(){ previewVisible = !previewVisible; $('livePreview').style.display = previewVisible ? 'block' : 'none'; updatePreview(); }
+function updatePreview(){ if(!previewVisible) return; $('livePreview').innerHTML = renderMarkdown($('content').value || ''); }
+function onContentInput(){ if(previewVisible) updatePreview(); }
+
+function publish(){
+  const cur = getCurrentUser(); if(!cur){ alert('Sign in to publish'); return; }
+  const title = $('title').value.trim(); const content = $('content').value.trim();
+  const category = $('category').value; const tags = $('tags').value.trim().split(',').map(s=>s.trim()).filter(Boolean);
+  const featured = $('featured').checked; const protect = $('protect').checked; const publishAtVal = $('publishAt').value;
+  if(!title || !content){ alert('Add title and content'); return; }
+
+  // simple protection: obfuscate with passphrase appended (not real crypto)
+  let contentToStore = content; let encFlag = false;
+  if(protect){
+    const p = prompt('Enter passphrase to protect this post (remember it).');
+    if(!p){ alert('Passphrase required'); return; }
+    contentToStore = btoa(unescape(encodeURIComponent(content + '||' + p)));
+    encFlag = true;
+  }
+
+  const postObj = {
+    id: editingId || uid(),
+    ownerId: cur.id,
+    title, category, tags, featured: !!featured,
+    image: pendingImageBase64 || '',
+    ts: Date.now(),
+    publishAt: publishAtVal ? new Date(publishAtVal).getTime() : null,
+    _encrypted: !!encFlag,
+    content: contentToStore,
+    comments: [],
+    stats: { views:0, readingTime:0, lastViewed:null }
+  };
+
+  if(editingId){
+    posts = posts.map(p => p.id === editingId ? {...p, ...postObj} : p);
+    editingId = null; $('editingIndicator').innerText='New'; $('publishBtn').innerText='Publish';
+  } else {
+    posts.push(postObj);
+  }
+  savePosts(); clearForm(); renderPosts(); renderHome(); navigate('posts');
+}
+
+/* file to base64 with resize */
+function fileToDataUrl(file,maxWidth=1200){ return new Promise((res,rej)=>{ const reader=new FileReader(); reader.onload=()=>{ const img=new Image(); img.onload=()=>{ const scale=Math.min(1,maxWidth/img.width); const canvas=document.createElement('canvas'); canvas.width=Math.round(img.width*scale); canvas.height=Math.round(img.height*scale); canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height); const mime = file.type==='image/png'?'image/png':'image/jpeg'; res(canvas.toDataURL(mime,0.85)); }; img.onerror=()=>rej(new Error('Image load')); img.src=reader.result; }; reader.onerror=()=>rej(new Error('File read')); reader.readAsDataURL(file); }); }
+
+/* ---------- Render posts & featured (respect owner filtering) ---------- */
+function applyFilters(){ renderPosts(); }
+
+function renderPosts(){
+  const grid = $('postsGrid'); grid.innerHTML=''; const q=($('searchInput').value||'').toLowerCase(); const cat=$('categoryFilter').value; const nowTs=Date.now();
+  const cur = getCurrentUser();
+  let visible = posts.filter(p=>{
+    if(p.publishAt && p.publishAt > nowTs) return false;
+    // owner filter: admin sees all; else only own posts
+    if(cur && cur.role==='admin'){} else { if(!cur) return false; if(p.ownerId !== cur.id) return false; }
+    const hay = (p.title + ' ' + (p._encrypted ? '' : p.content) + ' ' + (p.tags||[]).join(' ') + ' ' + p.category).toLowerCase();
+    const matchesQ = !q || hay.includes(q);
+    const matchesC = !cat || p.category === cat;
+    return matchesQ && matchesC;
+  }).sort((a,b)=>b.ts - a.ts);
+  $('resultCount').textContent = visible.length;
+  if(visible.length === 0){ grid.innerHTML = '<div class="kv">No posts found</div>'; return; }
+  visible.forEach(p=>{
+    const owner = users.find(u=>u.id===p.ownerId);
+    const el = document.createElement('div'); el.className='postCard';
+    el.innerHTML = `${p.image? `<img class="postThumb" src="${p.image}">` : '' }
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="flex:1"><div style="font-weight:800">${highlightText(p.title,q)}</div><div class="kv" style="margin-top:6px">${escape(p.category)} • ${new Date(p.ts).toLocaleString()} • <span class="kv">by ${escape(owner?owner.name: 'unknown')}</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+          ${p.featured? '<div style="color:var(--accent)">Featured</div>':''}
+          <div style="display:flex;gap:6px">
+            <button class="btn" onclick="openPost('${p.id}')">Read</button>
+            ${cur && (cur.role==='admin' || p.ownerId===cur.id) ? `<button class="btn" onclick="editPost('${p.id}')">Edit</button>` : ''}
+            ${cur && (cur.role==='admin' || p.ownerId===cur.id) ? `<button class="btn" onclick="duplicatePost('${p.id}')">Duplicate</button>` : ''}
+            ${cur && (cur.role==='admin' || p.ownerId===cur.id) ? `<button class="btn" style="background:#ff4d6d;color:white" onclick="deletePost('${p.id}')">Delete</button>` : ''}
+          </div>
+        </div>
+      </div>
+      <div class="kv" style="margin-top:8px">${p._encrypted? '<em>Protected</em>' : escape((p.content||'').slice(0,140))}</div>
+    `;
+    grid.appendChild(el);
+  });
+}
+
+function renderHome(){
+  const fg = $('featuredGrid'); fg.innerHTML=''; const nowTs = Date.now();
+  const cur = getCurrentUser();
+  const featured = posts.filter(p => p.featured && (!p.publishAt || p.publishAt <= nowTs) && (cur && cur.role==='admin' ? true : (cur && p.ownerId===cur.id))).sort((a,b)=>b.ts-a.ts).slice(0,3);
+  $('featuredCount') && ($('featuredCount').textContent = featured.length);
+  $('totalCount').textContent = posts.length;
+  if(featured.length===0){ fg.innerHTML = '<div class="kv">No featured posts</div>'; return; }
+  featured.forEach(p => {
+    const d = document.createElement('div'); d.className='postCard'; d.style.padding='10px';
+    d.innerHTML = `${p.image? `<img class="postThumb" src="${p.image}">` : ''}<div class="kv">${escape(p.category)}</div><div style="font-weight:800">${escape(p.title)}</div><div class="kv" style="margin-top:6px">${escape((p._encrypted? '(Protected)' : (p.content||'').slice(0,100)))}...</div><div style="margin-top:8px"><button class="btn" onclick="openPost('${p.id}')">Read</button></div>`;
+    fg.appendChild(d);
+  });
+}
+
+/* ---------- Post open (handle protected) ---------- */
+function openPost(id){
+  const p = posts.find(x=>x.id===id); if(!p) return alert('Not found');
+  currentOpenPostId = id; readStartTs = Date.now();
+  const owner = users.find(u=>u.id===p.ownerId);
+  let contentHtml = '';
+  if(p._encrypted){
+    const pass = prompt('This post is protected. Enter passphrase:'); if(!pass) return;
+    try {
+      const decoded = decodeURIComponent(escape(atob(p.content)));
+      const [plain, passStored] = decoded.split('||');
+      if(pass !== passStored){ alert('Wrong passphrase'); return; }
+      contentHtml = renderMarkdown(plain);
+    } catch(e){ alert('Failed to decode'); return; }
+  } else {
+    contentHtml = renderMarkdown(p.content || '');
+  }
+  $('modalBody').innerHTML = `<div style="display:flex;gap:12px;flex-wrap:wrap"><div style="flex:1"><div class="kv">${escape(p.category)} • ${new Date(p.ts).toLocaleString()} • by ${escape(owner?owner.name:'unknown')}</div><h2 style="margin-top:6px">${escape(p.title)}</h2><div style="margin-top:10px">${contentHtml}</div><div style="margin-top:12px">${(p.tags||[]).map(t=>`<span class="tag">${escape(t)}</span>`).join(' ')}</div></div><div style="width:280px">${p.image? `<img src="${p.image}" style="width:100%;border-radius:8px">`:''}</div></div>`;
+  $('commentList').innerHTML = (p.comments||[]).map(c=>`<div class="kv">${escape(c.text)}</div>`).join('');
+  $('modal').style.display='flex';
+  p.stats = p.stats || { views:0, readingTime:0, lastViewed:null }; p.stats.views = (p.stats.views||0)+1; p.stats.lastViewed = Date.now(); savePosts();
+}
+
+function closeModalByIdEvent(e,id){ if(e && e.target && e.target.id !== id) return; $(id).style.display='none'; if(id==='modal'){ if(currentOpenPostId && readStartTs){ const seconds = Math.round((Date.now()-readStartTs)/1000); const p = posts.find(x=>x.id===currentOpenPostId); if(p){ p.stats = p.stats || {views:0,readingTime:0,lastViewed:null}; p.stats.readingTime = (p.stats.readingTime||0) + seconds; savePosts(); } } currentOpenPostId=null; readStartTs=null; } }
+function closeModalById(e,id){ if(!e){ $(id).style.display='none'; } else { if(e.target && e.target.className && e.target.className.indexOf('modal')!==-1) $(id).style.display='none'; } }
+
+/* ---------- Edit / duplicate / delete ---------- */
+function editPost(id){
+  const p = posts.find(x=>x.id===id); if(!p) return;
+  const cur = getCurrentUser(); if(!cur) return alert('Sign in'); if(cur.role!=='admin' && p.ownerId !== cur.id) return alert('No permission');
+  editingId = id; $('editingIndicator').innerText='Editing'; $('publishBtn').innerText='Save';
+  $('title').value = p.title; $('content').value = p._encrypted ? '' : p.content; $('tags').value = (p.tags||[]).join(', '); $('category').value = p.category || 'AI'; $('featured').checked = !!p.featured; $('protect').checked = !!p._encrypted;
+  $('publishAt').value = p.publishAt ? new Date(p.publishAt).toISOString().slice(0,16) : '';
+  $('imgPreview').innerHTML = p.image ? `<img src="${p.image}" style="width:100%;border-radius:8px">` : '';
+  pendingImageBase64 = '';
+  navigate('create');
+}
+function duplicatePost(id){ const p = posts.find(x=>x.id===id); if(!p) return; const cur = getCurrentUser(); if(!cur) return alert('Sign in'); const clone = JSON.parse(JSON.stringify(p)); clone.id = uid(); clone.ts = Date.now(); clone.ownerId = cur.id; clone.title = clone.title + ' (Copy)'; posts.push(clone); savePosts(); renderPosts(); renderHome(); }
+function deletePost(id){ const p = posts.find(x=>x.id===id); if(!p) return; const cur = getCurrentUser(); if(!cur) return alert('Sign in'); if(cur.role!=='admin' && p.ownerId !== cur.id) return alert('No permission'); if(!confirm('Delete post?')) return; posts = posts.filter(x=>x.id!==id); savePosts(); renderPosts(); renderHome(); }
+
+/* ---------- Comments ---------- */
+function addComment(){
+  const txt = $('commentInput').value.trim(); if(!txt) return alert('Add a comment'); if(!currentOpenPostId) return alert('Open a post'); const p = posts.find(x=>x.id===currentOpenPostId); if(!p) return;
+  const cur = getCurrentUser(); p.comments = p.comments || []; p.comments.push({ id: uid(), text: txt, ts: Date.now(), author: cur ? cur.name : 'Guest' }); savePosts(); $('commentInput').value=''; $('commentList').innerHTML = p.comments.map(c=>`<div class="kv">${escape(c.text)}</div>`).join('');
+}
+
+/* ---------- Export / Import ---------- */
+function exportPosts(){ const blob = new Blob([JSON.stringify({users,posts},null,2)],{type:'application/json'}); const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download = `neonblog_backup_${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(url); }
+function importPosts(e){ const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = ()=> { try { const data = JSON.parse(r.result); if(!data) throw new Error('Invalid'); if(Array.isArray(data.users) && Array.isArray(data.posts)){ if(confirm('Merge=OK, Cancel=REPLACE')){ const existingIds = new Set(users.map(u=>u.id)); data.users.forEach(u=>{ if(existingIds.has(u.id)) u.id = uid(); users.push(u); }); const postIds = new Set(posts.map(p=>p.id)); data.posts.forEach(p=>{ if(postIds.has(p.id)) p.id = uid(); posts.push(p); }); } else { users = data.users; posts = data.posts; } } else { // older format: assume it's posts array
+        if(!Array.isArray(data)) throw new Error('Unsupported format'); if(confirm('Merge incoming posts? OK=merge, Cancel=replace')){ const postIds = new Set(posts.map(p=>p.id)); data.forEach(p=>{ if(postIds.has(p.id)) p.id = uid(); posts.push(p); }); } else { posts = data; } }
+      saveUsers(); savePosts(); renderTopbarUser(); refreshQuickSwitch(); renderPosts(); renderHome(); alert('Import complete');
+    } catch(err){ alert('Import failed: '+err.message); } }; r.readAsText(f); e.target.value=''; }
+
+/* ---------- Utilities ---------- */
+function escape(s){ return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])); }
+function highlightText(s,q){ if(!q) return escape(s); const parts = q.trim().split(/\s+/).filter(Boolean).map(w=>w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')); const re = new RegExp('(' + parts.join('|') + ')','ig'); return escape(s).replace(re,'<mark>$1</mark>'); }
+function rgbToHex(rgb){ if(!rgb) return '#a78bfa'; rgb = rgb.trim(); if(rgb.startsWith('#')) return rgb; const m = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/); if(!m) return '#a78bfa'; return '#'+[1,2,3].map(i=>parseInt(m[i]).toString(16).padStart(2,'0')).join(''); }
+
+/* ---------- Simple markdown renderer ---------- */
+function renderMarkdown(md){
+  if(!md) return '<div class="kv">Empty</div>';
+  let out = escape(md);
+  out = out.replace(/```([\s\S]*?)```/g,(m,c)=>`<pre style="background:rgba(255,255,255,0.02);padding:10px;border-radius:8px;overflow:auto"><code>${escape(c)}</code></pre>`);
+  out = out.replace(/`([^`]+)`/g,'<code style="background:rgba(255,255,255,0.02);padding:2px 6px;border-radius:6px">$1</code>');
+  out = out.replace(/^### (.*$)/gim,'<h3>$1</h3>');
+  out = out.replace(/^## (.*$)/gim,'<h2>$1</h2>');
+  out = out.replace(/^# (.*$)/gim,'<h1>$1</h1>');
+  out = out.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+  out = out.replace(/\*(.*?)\*/g,'<em>$1</em>');
+  out = out.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  out = out.replace(/^\s*-\s+(.*)/gim,'<li>$1</li>');
+  out = out.replace(/(?:<(?:li)>[\s\S]*?<\/li>\s*)+/g,grp=>'<ul>'+grp+'</ul>');
+  return out.split(/\n{2,}/).map(p=>/^\s*<(?:(h1|h2|h3|pre|ul|ol|li|blockquote))/.test(p.trim())?p:`<p style="margin:8px 0;white-space:pre-wrap">${p}</p>`).join('');
+}
+
+/* ---------- Quick switch list and counts ---------- */
+function refreshQuickSwitch(){
+  const sel = $('quickSwitch'); sel.innerHTML = '<option value="">-- switch user (dev) --</option>';
+  users.forEach(u=>{ const opt = document.createElement('option'); opt.value = u.id; opt.textContent = `${u.name} (${u.role})`; sel.appendChild(opt); });
+  renderUsersCount();
+}
+function renderUsersCount(){ $('usersCount').textContent = users.length; $('totalCount').textContent = posts.length; refreshQuickSwitch(); }
+
+/* ---------- Initial render + keyboard shortcut ---------- */
+(function initUI(){
+  // accent picker init
+  try{ $('accentPicker').value = rgbToHex(getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()); }catch(e){}
+  $('accentPicker').addEventListener('change', e=>{ document.documentElement.style.setProperty('--accent', e.target.value); document.documentElement.style.setProperty('--accent2', shadeColor(e.target.value,-18)); localStorage.setItem(THEME_KEY, JSON.stringify({accent:e.target.value})); });
+  renderTopbarUser(); renderHome(); renderPosts();
+  document.addEventListener('keydown', e=>{ if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='n'){ e.preventDefault(); navigate('create'); } });
+})();
+
+/* ---------- Navigation helper ---------- */
+function navigate(section){ if(section==='create'){ $('create').style.display='block'; $('posts').style.display='none'; window.scrollTo({top:0,behavior:'smooth'}); } else { $('create').style.display='none'; $('posts').style.display='block'; window.scrollTo({top:0,behavior:'smooth'}); } }
+
+/* ---------- Utility: shade color ---------- */
+function shadeColor(hex, percent){ let c=hex.replace('#',''); if(c.length===3) c=c.split('').map(x=>x+x).join(''); const num=parseInt(c,16); let r=(num>>16)+percent,g=(num>>8&255)+percent,b=(num&255)+percent; r=Math.max(0,Math.min(255,r)); g=Math.max(0,Math.min(255,g)); b=Math.max(0,Math.min(255,b)); return '#'+(1<<24 | r<<16 | g<<8 | b).toString(16).slice(1); }
+
+/* ---------- PWA service worker blob (single-file) ---------- */
+function registerServiceWorkerFromBlob(){
+  if(!('serviceWorker' in navigator)) return;
+  const swCode = `const CACHE='neonblog-cache-v1';self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['/'])).catch(()=>{}));});self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(rsp=>{try{const r2=rsp.clone();caches.open(CACHE).then(cache=>cache.put(e.request,r2));}catch(e){}return rsp;}).catch(()=>caches.match('/'))));});`;
+  const blob = new Blob([swCode], {type:'application/javascript'}); const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(()=>{});
+}
+try{ registerServiceWorkerFromBlob(); }catch(e){}
+
+/* ---------- Small debug exposure ---------- */
+window._neon = { users, posts, session, saveUsers, savePosts };
+
+/* ---------- Helper bindings ---------- */
+// Expose functions to global scope (for inline onclick)
+window.openLogin = openLogin;
+window.openSignup = openSignup;
+window.openProfile = function(){ const cur = getCurrentUser(); if(!cur) return alert('Sign in'); $('signupName').value = cur.name; $('signupEmail').value = cur.email; $('signupRole').value = cur.role; $('profileModal') && ($('profileModal').style.display='flex'); openProfile = function(){}; }; // placeholder
+window.openAdmin = openAdmin;
+window.doLogin = doLogin;
+window.doSignup = doSignup;
+window.doLogout = doLogout;
+window.publish = publish;
+window.clearForm = clearForm;
+window.insertMarkdown = insertMarkdown;
+window.togglePreview = togglePreview;
+window.onContentInput = onContentInput;
+window.previewPost = updatePreview;
+window.openPost = openPost;
+window.closeModalById = closeModalById;
+window.editPost = editPost;
+window.duplicatePost = duplicatePost;
+window.deletePost = deletePost;
+window.addComment = addComment;
+window.exportPosts = exportPosts;
+window.importPosts = importPosts;
+window.openProfile = function(){ const cur = getCurrentUser(); if(!cur) return alert('Sign in'); // show profile modal (reuse signup modal for editing)
+  $('signupModal').style.display='flex'; $('signupName').value = cur.name; $('signupEmail').value = cur.email; $('signupRole').value = cur.role; $('signupPassword').value=''; $('signupMsg').textContent='(editing your profile — password left blank to keep)'; 
+  // override create behavior to save profile changes
+  window.doSignup = async function(){
+    const name = $('signupName').value.trim(); const email = $('signupEmail').value.trim().toLowerCase(); const pass = $('signupPassword').value; const role = $('signupRole').value;
+    const curU = getCurrentUser(); if(!curU) return alert('No current user');
+    // update fields (if email changed ensure uniqueness)
+    if(email !== curU.email && users.find(u=>u.email===email)){ $('signupMsg').textContent='Email already in use'; return; }
+    curU.name = name || curU.name; curU.email = email || curU.email; curU.role = role || curU.role;
+    if(pass){ const res = await hashPassword(pass); curU.salt = res.salt; curU.hash = res.hash; }
+    saveUsers(); session = { userId: curU.id }; saveSession(); $('signupModal').style.display='none'; $('signupMsg').textContent=''; renderTopbarUser(); renderAdminUsers && renderAdminUsers();
+  };
+};
+
+/* ---------- finish rendering counts and lists ---------- */
+renderTopbarUser(); refreshQuickSwitch(); renderPosts(); renderHome();
+
+</script>
+</body>
+</html>
